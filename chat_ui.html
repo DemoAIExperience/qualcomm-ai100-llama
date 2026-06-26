@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GenieX Chat</title>
+<style>
+:root {
+    --bg: #0b0f14;
+    --panel: #121821;
+    --panel-2: #17202b;
+    --panel-3: #1d2835;
+    --input: #202d3b;
+    --border: #2f3d4f;
+    --text: #eef2f7;
+    --muted: #9fb0c3;
+    --user: #38bdf8;
+    --ai: #22c55e;
+    --danger: #ef4444;
+    --primary: #22c1ff;
+    --analysis: #f59e0b;
+    --sidebar: 320px;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+.app {
+    display: grid;
+    grid-template-columns: var(--sidebar) 1fr;
+    height: 100vh;
+}
+.sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+}
+.sidebar-header {
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+}
+.sidebar-header h2 {
+    margin: 0 0 10px;
+    font-size: 16px;
+}
+.new-chat-btn {
+    width: 100%;
+    background: var(--primary);
+    color: #001018;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+.chat-item {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    background: var(--panel-2);
+}
+.chat-item.active {
+    border-color: var(--primary);
+    background: #163246;
+}
+.chat-item-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.chat-item-date {
+    font-size: 11px;
+    color: var(--muted);
+}
+.main {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+}
+.title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.topbar h1 {
+    margin: 0;
+    font-size: 18px;
+    color: #fff;
+}
+.topbar .sub {
+    font-size: 12px;
+    color: var(--muted);
+}
+.top-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.memory-badge,
+.mode-badge {
+    font-size: 12px;
+    color: #111827;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.memory-badge { background: #d1fae5; }
+.mode-badge { background: #fde68a; }
+.rename-btn,
+.reset-btn {
+    border: none;
+    padding: 9px 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    font-weight: 700;
+}
+.rename-btn {
+    background: #64748b;
+    color: white;
+}
+.reset-btn {
+    background: var(--danger);
+    color: white;
+}
+.mode-toggle {
+    display: flex;
+    gap: 8px;
+}
+.mode-option {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    cursor: pointer;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+}
+.mode-option.active.chat-mode {
+    background: #123348;
+    border-color: var(--primary);
+}
+.mode-option.active.analysis-mode {
+    background: #4a3208;
+    border-color: var(--analysis);
+}
+.chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: linear-gradient(to bottom, #0b0f14, #101722);
+}
+.msg {
+    margin: 12px 0;
+    line-height: 1.55;
+    max-width: 1000px;
+    word-wrap: break-word;
+}
+.msg b {
+    display: inline-block;
+    min-width: 90px;
+}
+.user { color: var(--user); }
+.ai { color: var(--ai); }
+.system-note {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 16px;
+}
+.input-box {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: var(--panel-2);
+    border-top: 1px solid var(--border);
+}
+textarea {
+    flex: 1;
+    min-height: 56px;
+    max-height: 180px;
+    padding: 12px;
+    resize: vertical;
+    background: var(--input);
+    color: #fff;
+    border: 1px solid #3a4a5f;
+    border-radius: 8px;
+    outline: none;
+    font-family: Arial, sans-serif;
+}
+.send-btn {
+    padding: 12px 16px;
+    background: var(--primary);
+    color: #04111a;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+}
+.send-btn:disabled,
+.reset-btn:disabled,
+.rename-btn:disabled,
+.new-chat-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+@media (max-width: 980px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Histórico de chats</h2>
+            <button class="new-chat-btn" id="newChatBtn">+ Novo chat</button>
+        </div>
+        <div class="chat-list" id="chatList"></div>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">
+            <div class="title-wrap">
+                <h1 id="chatTitle">GenieX Chat</h1>
+                <div class="sub">Chat normal e Think Deeper com memória persistente</div>
+            </div>
+
+            <div class="top-actions">
+                <div class="memory-badge" id="memoryBadge">Nome salvo: -</div>
+                <div class="mode-badge" id="modeBadge">Modo: chat</div>
+
+                <div class="mode-toggle">
+                    <button class="mode-option chat-mode active" id="chatModeBtn">Chat</button>
+                    <button class="mode-option analysis-mode" id="analysisModeBtn">Think Deeper</button>
+                </div>
+
+                <button class="rename-btn" id="renameBtn">Renomear chat</button>
+                <button class="reset-btn" id="resetBtn">Limpar chat</button>
+            </div>
+        </div>
+
+        <div id="chat" class="chat">
+            <div class="system-note">
+                Selecione um chat na esquerda ou crie um novo. Use “Think Deeper” para análise mais profunda.
+            </div>
+        </div>
+
+        <div class="input-box">
+            <textarea id="input" placeholder="Digite sua mensagem..."></textarea>
+            <button class="send-btn" id="sendBtn">Enviar</button>
+        </div>
+    </main>
+</div>
+
+<script>
+const API_CHAT = "http://127.0.0.1:5000/chat";
+const API_HISTORY = "http://127.0.0.1:5000/history";
+const API_SESSIONS = "http://127.0.0.1:5000/sessions";
+const API_NEW_SESSION = "http://127.0.0.1:5000/session/new";
+const API_SESSION = (id) => `http://127.0.0.1:5000/session/${id}`;
+const API_SESSION_RENAME = (id) => `http://127.0.0.1:5000/session/${id}/rename`;
+const API_SESSION_RESET = (id) => `http://127.0.0.1:5000/session/${id}/reset`;
+
+let currentSessionId = "default";
+let currentMode = "chat";
+
+function cleanReply(text) {
+    if (!text) return "";
+    let out = text;
+    out = out.replace(/<\\|.*?\\|>/g, "");
+    out = out.replace(/\\buser\\b/gi, "");
+    out = out.replace(/\\bassistant\\b/gi, "");
+    out = out.replace(/\\bsystem\\b/gi, "");
+    out = out.replace(/\\[nome do usuário\\]/gi, "usuário");
+    out = out.replace(/user\\s+/gi, "");
+    out = out.replace(/assistant\\s+/gi, "");
+    out = out.replace(/\\s+/g, " ").trim();
+    return out;
+}
+
+function escapeHtml(str) {
+    return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+}
+
+function addMessage(role, text) {
+    const chat = document.getElementById("chat");
+    const div = document.createElement("div");
+    div.className = "msg " + role;
+    const label = role === "user" ? "user" : "ai";
+    div.innerHTML = "<b>" + label + ":</b> " + escapeHtml(text);
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+}
+
+function updateMemoryBadge(memory) {
+    const badge = document.getElementById("memoryBadge");
+    if (memory && memory.user_name) {
+        badge.textContent = "Nome salvo: " + memory.user_name;
+    } else {
+        badge.textContent = "Nome salvo: -";
+    }
+}
+
+function updateModeUI() {
+    document.getElementById("modeBadge").textContent = "Modo: " + currentMode;
+    document.getElementById("chatModeBtn").classList.toggle("active", currentMode === "chat");
+    document.getElementById("analysisModeBtn").classList.toggle("active", currentMode === "analysis");
+}
+
+async function loadMemory() {
+    try {
+        const res = await fetch(API_HISTORY, { cache: "no-store" });
+        const data = await res.json();
+        updateMemoryBadge(data.memory || null);
+    } catch {
+        updateMemoryBadge(null);
+    }
+}
+
+async function loadSessions() {
+    const list = document.getElementById("chatList");
+    list.innerHTML = "";
+
+    const res = await fetch(API_SESSIONS, { cache: "no-store" });
+    const data = await res.json();
+    const items = data.sessions || [];
+
+    if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "system-note";
+        empty.textContent = "Nenhum chat ainda.";
+        list.appendChild(empty);
+        return;
+    }
+
+    items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "chat-item" + (item.id === currentSessionId ? " active" : "");
+        div.innerHTML = `
+            <div class="chat-item-title">${escapeHtml(item.title || "Novo chat")}</div>
+            <div class="chat-item-date">${escapeHtml(item.updated_at || "")}</div>
+        `;
+        div.addEventListener("click", async () => {
+            currentSessionId = item.id;
+            await loadCurrentSession();
+            await loadSessions();
+        });
+        list.appendChild(div);
+    });
+}
+
+async function loadCurrentSession() {
+    const chat = document.getElementById("chat");
+    chat.innerHTML = `<div class="system-note">Sessão atual carregada.</div>`;
+
+    const res = await fetch(API_SESSION(currentSessionId), { cache: "no-store" });
+    const data = await res.json();
+
+    document.getElementById("chatTitle").textContent = data.title || "GenieX Chat";
+
+    const hist = data.history || [];
+    hist.forEach(item => {
+        if (item.role === "user") addMessage("user", item.content || "");
+        if (item.role === "assistant") addMessage("ai", cleanReply(item.content || ""));
+    });
+}
+
+async function createNewChat() {
+    const btn = document.getElementById("newChatBtn");
+    btn.disabled = true;
+    try {
+        const res = await fetch(API_NEW_SESSION, { method: "POST" });
+        const data = await res.json();
+        currentSessionId = data.session_id;
+        await loadSessions();
+        await loadCurrentSession();
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function renameCurrentChat() {
+    const newTitle = prompt("Novo nome do chat:");
+    if (!newTitle || !newTitle.trim()) return;
+
+    await fetch(API_SESSION_RENAME(currentSessionId), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle.trim() })
+    });
+
+    await loadSessions();
+    await loadCurrentSession();
+}
+
+async function resetCurrentChat() {
+    await fetch(API_SESSION_RESET(currentSessionId), { method: "POST" });
+    await loadCurrentSession();
+    await loadSessions();
+}
+
+async function sendMessage() {
+    const input = document.getElementById("input");
+    const sendBtn = document.getElementById("sendBtn");
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    addMessage("user", text);
+    input.value = "";
+    sendBtn.disabled = true;
+
+    try {
+        const res = await fetch(API_CHAT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message: text,
+                mode: currentMode,
+                session_id: currentSessionId
+            })
+        });
+
+        const data = await res.json();
+        addMessage("ai", cleanReply(data.response || "Erro de resposta"));
+
+        if (data.mode) {
+            currentMode = data.mode;
+            updateModeUI();
+        }
+
+        await loadMemory();
+        await loadSessions();
+        await loadCurrentSession();
+    } catch (e) {
+        addMessage("ai", "Erro: " + e.message);
+    } finally {
+        sendBtn.disabled = false;
+        input.focus();
+    }
+}
+
+document.getElementById("sendBtn").addEventListener("click", sendMessage);
+document.getElementById("newChatBtn").addEventListener("click", createNewChat);
+document.getElementById("renameBtn").addEventListener("click", renameCurrentChat);
+document.getElementById("resetBtn").addEventListener("click", resetCurrentChat);
+
+document.getElementById("chatModeBtn").addEventListener("click", () => {
+    currentMode = "chat";
+    updateModeUI();
+});
+
+document.getElementById("analysisModeBtn").addEventListener("click", () => {
+    currentMode = "analysis";
+    updateModeUI();
+});
+
+document.getElementById("input").addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+(async function init() {
+    updateModeUI();
+    await loadMemory();
+    await loadSessions();
+
+    const res = await fetch(API_SESSIONS, { cache: "no-store" });
+    const data = await res.json();
+    const items = data.sessions || [];
+
+    if (items.length) {
+        currentSessionId = items[0].id;
+        await loadCurrentSession();
+        await loadSessions();
+    } else {
+        await createNewChat();
+    }
+})();
+</script>
+</body>
+</html>

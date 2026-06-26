@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GenieX Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --blue: #2563eb;
+      --red: #dc2626;
+      --green: #16a34a;
+      --orange: #ea580c;
+      --purple: #7c3aed;
+      --teal: #0f766e;
+      --amber: #a16207;
+      --shadow: 0 2px 10px rgba(0,0,0,0.06);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      width: min(1550px, 95vw);
+      margin: 24px auto 40px;
+    }
+
+    .header {
+      margin-bottom: 18px;
+    }
+
+    .header h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+    }
+
+    .header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(120px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+
+    .card-label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .card-sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .warn-pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .danger-pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .panel h2 {
+      margin: 0 0 4px;
+      font-size: 18px;
+    }
+
+    .panel p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .panel canvas {
+      width: 100% !important;
+      height: 320px !important;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    code {
+      background: #eef2f7;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 1300px) {
+      .cards {
+        grid-template-columns: repeat(5, minmax(120px, 1fr));
+      }
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .cards {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>GenieX Performance Dashboard</h1>
+      <p>NPU local • métricas agrupadas por unidade • atualização automática</p>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-label">Execução</div>
+        <div class="card-value"><span class="status-pill" id="execMode">-</span></div>
+        <div class="card-sub">status configurado do log</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Session ID</div>
+        <div class="card-value" id="sessionId">-</div>
+        <div class="card-sub">sessão atual do último evento</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Modo</div>
+        <div class="card-value" id="modeValue">-</div>
+        <div class="card-sub">chat ou analysis</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Saúde</div>
+        <div class="card-value"><span id="healthPill" class="status-pill">OK</span></div>
+        <div class="card-sub">alerta de degradação</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">TPS médio</div>
+        <div class="card-value" id="avgTPS">-</div>
+        <div class="card-sub">tokens por segundo</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Latência média</div>
+        <div class="card-value" id="avgLatency">-</div>
+        <div class="card-sub">tempo total por resposta</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">TTFT médio</div>
+        <div class="card-value" id="avgTTFT">-</div>
+        <div class="card-sub">tempo até o primeiro token</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Completion média</div>
+        <div class="card-value" id="avgComp">-</div>
+        <div class="card-sub">tokens gerados</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Contexto médio</div>
+        <div class="card-value" id="avgContext">-</div>
+        <div class="card-sub">chars enviados no contexto</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Resumo médio</div>
+        <div class="card-value" id="avgSummary">-</div>
+        <div class="card-sub">chars do resumo automático</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">RAM média</div>
+        <div class="card-value" id="avgRAM">-</div>
+        <div class="card-sub">processo geniex</div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">CPU média</div>
+        <div class="card-value" id="avgCPU">-</div>
+        <div class="card-sub">normalizada por núcleos</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Tempo de resposta</h2>
+        <p>Latência total e TTFT em milissegundos, distribuídos no tempo real do log.</p>
+        <canvas id="timingChart"></canvas>
+      </div>
+
+      <div class="panel">
+        <h2>Throughput</h2>
+        <p>Velocidade de geração em tokens por segundo ao longo do tempo.</p>
+        <canvas id="tpsChart"></canvas>
+      </div>
+
+      <div class="panel">
+        <h2>Uso de tokens</h2>
+        <p>Prompt, completion e total por requisição.</p>
+        <canvas id="tokensChart"></canvas>
+      </div>
+
+      <div class="panel">
+        <h2>Recursos e contexto</h2>
+        <p>RAM, CPU, tamanho do contexto e tamanho do resumo.</p>
+        <canvas id="resourcesChart"></canvas>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Fonte: <code>/04_logs/log_performance.txt</code> • janela móvel dos últimos <span id="pointsCount">30</span> pontos
+    </div>
+  </div>
+
+  <script>
+    const MAX_POINTS = 30;
+    document.getElementById("pointsCount").textContent = String(MAX_POINTS);
+
+    function parseLine(line) {
+      const obj = {};
+      const parts = line.split("|");
+
+      for (const raw of parts) {
+        const p = raw.trim();
+        const idx = p.indexOf("=");
+        if (idx === -1) continue;
+
+        const key = p.slice(0, idx).trim();
+        const valueStr = p.slice(idx + 1).trim();
+
+        if (["time", "execution_target", "npu_status", "mode", "session_id"].includes(key)) {
+          obj[key] = valueStr;
+        } else {
+          const value = Number(valueStr);
+          obj[key] = Number.isFinite(value) ? value : null;
+        }
+      }
+
+      return obj;
+    }
+
+    function avg(arr) {
+      const valid = arr.filter(v => Number.isFinite(v));
+      if (!valid.length) return 0;
+      return valid.reduce((a, b) => a + b, 0) / valid.length;
+    }
+
+    function fmtMs(v) {
+      if (!Number.isFinite(v)) return "-";
+      if (v >= 1000) return (v / 1000).toFixed(2) + " s";
+      return Math.round(v) + " ms";
+    }
+
+    function fmtTPS(v) {
+      if (!Number.isFinite(v)) return "-";
+      return v.toFixed(2) + " tok/s";
+    }
+
+    function fmtTokens(v) {
+      if (!Number.isFinite(v)) return "-";
+      return Math.round(v) + " tok";
+    }
+
+    function fmtRAM(vMb) {
+      if (!Number.isFinite(vMb)) return "-";
+      if (vMb >= 1024) return (vMb / 1024).toFixed(2) + " GB";
+      return Math.round(vMb) + " MB";
+    }
+
+    function fmtCPU(v) {
+      if (!Number.isFinite(v)) return "-";
+      return v.toFixed(1) + " %";
+    }
+
+    function fmtChars(v) {
+      if (!Number.isFinite(v)) return "-";
+      return Math.round(v) + " ch";
+    }
+
+    function setHealth(last) {
+      const pill = document.getElementById("healthPill");
+
+      const lat = last?.latency || 0;
+      const tokPrompt = last?.tok_prompt || 0;
+      const contextChars = last?.context_chars || 0;
+
+      if (lat > 15000 || tokPrompt > 2000 || contextChars > 4000) {
+        pill.className = "danger-pill";
+        pill.textContent = "CRÍTICO";
+        return;
+      }
+
+      if (lat > 7000 || tokPrompt > 1000 || contextChars > 2000) {
+        pill.className = "warn-pill";
+        pill.textContent = "ATENÇÃO";
+        return;
+      }
+
+      pill.className = "status-pill";
+      pill.textContent = "OK";
+    }
+
+    const commonOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          position: "top",
+          labels: { color: "#374151" }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: "#6b7280",
+            maxRotation: 45,
+            minRotation: 45,
+            autoSkip: true,
+            maxTicksLimit: 10
+          },
+          grid: { color: "#eef2f7" },
+          title: {
+            display: true,
+            text: "Horário da requisição",
+            color: "#6b7280"
+          }
+        }
+      }
+    };
+
+    const timingChart = new Chart(document.getElementById("timingChart"), {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Latência (ms)",
+            data: [],
+            borderColor: "#dc2626",
+            backgroundColor: "rgba(220,38,38,0.08)",
+            tension: 0.25,
+            pointRadius: 3
+          },
+          {
+            label: "TTFT (ms)",
+            data: [],
+            borderColor: "#16a34a",
+            backgroundColor: "rgba(22,163,74,0.08)",
+            tension: 0.25,
+            pointRadius: 3
+          }
+        ]
+      },
+      options: {
+        ...commonOptions,
+        plugins: {
+          ...commonOptions.plugins,
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${fmtMs(ctx.parsed.y)}`
+            }
+          }
+        },
+        scales: {
+          ...commonOptions.scales,
+          y: {
+            ticks: {
+              color: "#6b7280",
+              callback: (v) => fmtMs(v)
+            },
+            grid: { color: "#eef2f7" },
+            title: {
+              display: true,
+              text: "Tempo (ms)",
+              color: "#6b7280"
+            }
+          }
+        }
+      }
+    });
+
+    const tpsChart = new Chart(document.getElementById("tpsChart"), {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "TPS",
+            data: [],
+            borderColor: "#2563eb",
+            backgroundColor: "rgba(37,99,235,0.08)",
+            tension: 0.25,
+            pointRadius: 3
+          }
+        ]
+      },
+      options: {
+        ...commonOptions,
+        plugins: {
+          ...commonOptions.plugins,
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `TPS: ${fmtTPS(ctx.parsed.y)}`
+            }
+          }
+        },
+        scales: {
+          ...commonOptions.scales,
+          y: {
+            ticks: {
+              color: "#6b7280",
+              callback: (v) => `${v} tok/s`
+            },
+            grid: { color: "#eef2f7" },
+            title: {
+              display: true,
+              text: "Throughput (tok/s)",
+              color: "#6b7280"
+            }
+          }
+        }
+      }
+    });
+
+    const tokensChart = new Chart(document.getElementById("tokensChart"), {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Tokens total",
+            data: [],
+            borderColor: "#111827",
+            tension: 0.25,
+            pointRadius: 3
+          },
+          {
+            label: "Tokens prompt",
+            data: [],
+            borderColor: "#ea580c",
+            tension: 0.25,
+            pointRadius: 3
+          },
+          {
+            label: "Tokens completion",
+            data: [],
+            borderColor: "#7c3aed",
+            tension: 0.25,
+            pointRadius: 3
+          }
+        ]
+      },
+      options: {
+        ...commonOptions,
+        plugins: {
+          ...commonOptions.plugins,
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${fmtTokens(ctx.parsed.y)}`
+            }
+          }
+        },
+        scales: {
+          ...commonOptions.scales,
+          y: {
+            ticks: {
+              color: "#6b7280",
+              callback: (v) => `${v} tok`
+            },
+            grid: { color: "#eef2f7" },
+            title: {
+              display: true,
+              text: "Tokens",
+              color: "#6b7280"
+            }
+          }
+        }
+      }
+    });
+
+    const resourcesChart = new Chart(document.getElementById("resourcesChart"), {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "RAM (MB)",
+            data: [],
+            borderColor: "#0f766e",
+            tension: 0.25,
+            pointRadius: 3,
+            yAxisID: "yRam"
+          },
+          {
+            label: "CPU (%)",
+            data: [],
+            borderColor: "#a16207",
+            tension: 0.25,
+            pointRadius: 3,
+            yAxisID: "yCpu"
+          },
+          {
+            label: "Contexto (chars)",
+            data: [],
+            borderColor: "#7c3aed",
+            tension: 0.25,
+            pointRadius: 3,
+            yAxisID: "yCtx"
+          },
+          {
+            label: "Resumo (chars)",
+            data: [],
+            borderColor: "#2563eb",
+            tension: 0.25,
+            pointRadius: 3,
+            yAxisID: "yCtx"
+          }
+        ]
+      },
+      options: {
+        ...commonOptions,
+        plugins: {
+          ...commonOptions.plugins
+        },
+        scales: {
+          x: commonOptions.scales.x,
+          yRam: {
+            type: "linear",
+            position: "left",
+            ticks: {
+              color: "#6b7280",
+              callback: (v) => v >= 1024 ? (v / 1024).toFixed(1) + " GB" : `${Math.round(v)} MB`
+            },
+            grid: { color: "#eef2f7" },
+            title: {
+              display: true,
+              text: "RAM",
+              color: "#6b7280"
+            }
+          },
+          yCpu: {
+            type: "linear",
+            position: "right",
+            ticks: {
+              color: "#6b7280",
+              callback: (v) => `${v} %`
+            },
+            grid: { drawOnChartArea: false },
+            title: {
+              display: true,
+              text: "CPU",
+              color: "#6b7280"
+            }
+          },
+          yCtx: {
+            type: "linear",
+            position: "right",
+            ticks: {
+              display: false
+            },
+            grid: {
+              display: false
+            },
+            title: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+
+    async function loadData() {
+      const res = await fetch("/04_logs/log_performance.txt?t=" + Date.now(), { cache: "no-store" });
+      const text = await res.text();
+
+      let lines = text
+        .split("\n")
+        .map(l => l.trim())
+        .filter(Boolean);
+
+      if (lines.length > MAX_POINTS) {
+        lines = lines.slice(-MAX_POINTS);
+      }
+
+      const parsed = lines.map(parseLine).filter(d => Number.isFinite(d.tps) || d.mode || d.session_id);
+
+      const labels = parsed.map((d, i) => d.time ? d.time : `Req ${i + 1}`);
+
+      const tps = parsed.map(d => d.tps ?? null);
+      const latency = parsed.map(d => d.latency ?? null);
+      const ttft = parsed.map(d => d.ttft ?? null);
+      const tokTotal = parsed.map(d => d.tok_total ?? null);
+      const tokPrompt = parsed.map(d => d.tok_prompt ?? null);
+      const tokComp = parsed.map(d => d.tok_comp ?? null);
+      const ramMb = parsed.map(d => d.ram_mb ?? null);
+      const cpuPct = parsed.map(d => d.cpu_pct ?? null);
+      const contextChars = parsed.map(d => d.context_chars ?? null);
+      const summaryChars = parsed.map(d => d.summary_chars ?? null);
+
+      const last = parsed.length ? parsed[parsed.length - 1] : null;
+
+      const executionTarget =
+        last && last.execution_target
+          ? last.execution_target.toUpperCase()
+          : "NPU";
+
+      const npuStatus =
+        last && last.npu_status
+          ? last.npu_status
+          : "enabled";
+
+      document.getElementById("execMode").textContent = `${executionTarget} (${npuStatus})`;
+      document.getElementById("sessionId").textContent = last && last.session_id ? last.session_id : "-";
+      document.getElementById("modeValue").textContent = last && last.mode ? last.mode : "-";
+
+      document.getElementById("avgTPS").textContent = fmtTPS(avg(tps));
+      document.getElementById("avgLatency").textContent = fmtMs(avg(latency));
+      document.getElementById("avgTTFT").textContent = fmtMs(avg(ttft));
+      document.getElementById("avgComp").textContent = fmtTokens(avg(tokComp));
+      document.getElementById("avgContext").textContent = fmtChars(avg(contextChars));
+      document.getElementById("avgSummary").textContent = fmtChars(avg(summaryChars));
+      document.getElementById("avgRAM").textContent = fmtRAM(avg(ramMb));
+      document.getElementById("avgCPU").textContent = fmtCPU(avg(cpuPct));
+
+      setHealth(last);
+
+      timingChart.data.labels = labels;
+      timingChart.data.datasets[0].data = latency;
+      timingChart.data.datasets[1].data = ttft;
+      timingChart.update();
+
+      tpsChart.data.labels = labels;
+      tpsChart.data.datasets[0].data = tps;
+      tpsChart.update();
+
+      tokensChart.data.labels = labels;
+      tokensChart.data.datasets[0].data = tokTotal;
+      tokensChart.data.datasets[1].data = tokPrompt;
+      tokensChart.data.datasets[2].data = tokComp;
+      tokensChart.update();
+
+      resourcesChart.data.labels = labels;
+      resourcesChart.data.datasets[0].data = ramMb;
+      resourcesChart.data.datasets[1].data = cpuPct;
+      resourcesChart.data.datasets[2].data = contextChars;
+      resourcesChart.data.datasets[3].data = summaryChars;
+      resourcesChart.update();
+    }
+
+    loadData();
+    setInterval(loadData, 2000);
+  </script>
+</body>
+</html>
