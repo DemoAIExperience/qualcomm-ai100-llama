@@ -1,0 +1,12 @@
+qeff_env/
+ai100_env/
+qcom_model_workspace/
+installers/
+sdk_installers/
+GeniexProject_reference/
+_old_drafts/
+04_logs/
+.cache/
+__pycache__/
+*.pyc
+.pytest_cache/
